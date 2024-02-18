@@ -1,0 +1,13 @@
+we need mongoose or atleast just mongodb for the database
+- this will store out actual issues
+
+we need some kind of local storage for our api-test route
+- we dont want to save issues on apitest to the database
+that route should be a test route only
+
+/project is a main creation route for vaild issues that we want saved to the database POST PUT and all will be SAVED
+
+/api/issues/project should return a json list of all the issues for that project
+
+/ POST PUT on api/issues/apitest will <NOT> be saved.
+
