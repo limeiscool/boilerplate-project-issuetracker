@@ -61,16 +61,42 @@ module.exports = function (app) {
 
     .put(async (req, res) => {
       let project = req.params.project;
-      const currentProject = await Project.findOne({
-        project_name: project,
-      });
+      const issueID = req.body._id;
+      const currentProject = await Project.findOne(
+        { project_name: project },
+        { issues: { $elemMatch: { _id: issueID } } }
+      );
+      console.log(currentProject.issues[0]);
+      const currentIssue = currentProject.issues[0];
 
-      console.log(currentProject);
-      // const updatedProject = await Project.findOneAndUpdate(
-      //   { project_name: project, "issues._id": id },
-      //   { $set: { "issues.$": updatedIssue } },
-      //   { new: true }
-      // )
+      const Doc = await Project.findOneAndUpdate(
+        { project_name: project, "issues._id": issueID },
+        {
+          $set: {
+            "issues.$.issue_title":
+              req.body.issue_title || currentIssue.issue_title,
+            "issues.$.issue_text":
+              req.body.issue_text || currentIssue.issue_text,
+            "issues.$.created_by":
+              req.body.created_by || currentIssue.created_by,
+            "issues.$.updated_on": dateAutoGen(),
+            "issues.$.assigned_to":
+              req.body.assigned_to || currentIssue.assigned_to,
+            "issues.$.status_text":
+              req.body.status_text || currentIssue.status_text,
+            "issues.$.open": req.body.open || currentIssue.open,
+          },
+        }
+      ).then(async (data) => {
+        if (data == null) {
+          res.json({ error: "Issue not found" });
+        } else {
+          res.json({
+            result: "updated successfully",
+            _id: data.issues[0]._id,
+          });
+        }
+      });
     })
 
     .delete(function (req, res) {
