@@ -8,25 +8,41 @@ module.exports = function (app) {
   const dateAutoGen = () => {
     return new Date().toISOString();
   };
+  const filterIssues = (issues, query) => {
+    const newIssues = issues.filter((obj) => {
+      let result;
+      for (let key in query) {
+        if (obj[key] === query[key]) {
+          result = true;
+        } else {
+          result = false;
+          break;
+        }
+      }
+      return result;
+    });
+    return newIssues;
+  };
 
   app
     .route("/api/issues/:project")
 
-    .get(function (req, res) {
+    .get(async (req, res) => {
       let project = req.params.project;
-      let ProjObj = Project.findOne({ project_name: project });
-      ProjObj.then(async (data) => {
-        if (data == null) {
-          const newProject = new Project({
-            project_name: project,
-            issues: [],
-          });
-          await newProject.save();
-          res.json(newProject.issues);
-        } else {
-          res.json(data.issues);
-        }
-      });
+
+      console.log(req.query);
+
+      let ProjObj = await Project.findOne({ project_name: project });
+
+      if (!ProjObj) {
+        return res.status(404).json({ error: "project not found" });
+      }
+      let issues = ProjObj.issues;
+      if (Object.keys(req.query).length === 0) {
+        return res.json(issues);
+      }
+      let filteredIssues = filterIssues(issues, req.query);
+      return res.json(filteredIssues);
     })
 
     .post(async (req, res) => {
