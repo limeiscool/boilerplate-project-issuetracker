@@ -30,6 +30,14 @@ module.exports = function (app) {
     })
 
     .post(async (req, res) => {
+      console.log("POST");
+      if (
+        !req.body.issue_title ||
+        !req.body.issue_text ||
+        !req.body.created_by
+      ) {
+        return res.status(400).json({ error: "required field(s) missing" });
+      }
       let project = req.params.project;
       let issue = {
         issue_title: req.body.issue_title,
@@ -53,6 +61,9 @@ module.exports = function (app) {
         assigned_to: issue.assigned_to,
         status_text: issue.status_text,
         open: issue.open,
+        issue_title: issue.issue_title,
+        issue_text: issue.issue_text,
+        created_by: issue.created_by,
         _id: id,
         created_on: issue.created_on,
         updated_on: issue.updated_on,
