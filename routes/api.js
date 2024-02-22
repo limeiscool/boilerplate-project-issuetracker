@@ -30,8 +30,6 @@ module.exports = function (app) {
     .get(async (req, res) => {
       let project = req.params.project;
 
-      console.log(req.query);
-
       let ProjObj = await Project.findOne({ project_name: project });
 
       if (!ProjObj) {
@@ -39,14 +37,13 @@ module.exports = function (app) {
       }
       let issues = ProjObj.issues;
       if (Object.keys(req.query).length === 0) {
-        return res.json(issues);
+        return res.status(200).json(issues);
       }
       let filteredIssues = filterIssues(issues, req.query);
-      return res.json(filteredIssues);
+      return res.status(200).json(filteredIssues);
     })
 
     .post(async (req, res) => {
-      console.log("POST");
       if (
         !req.body.issue_title ||
         !req.body.issue_text ||
@@ -73,7 +70,7 @@ module.exports = function (app) {
       // get id for res
       const currentProject = await Project.findOne({ project_name: project });
       const id = currentProject.issues[currentProject.issues.length - 1]._id;
-      res.json({
+      res.status(200).json({
         assigned_to: issue.assigned_to,
         status_text: issue.status_text,
         open: issue.open,
@@ -88,13 +85,33 @@ module.exports = function (app) {
 
     .put(async (req, res) => {
       let project = req.params.project;
+      if (req.body._id === "" || !req.body._id) {
+        return res.status(202).json({ error: "missing _id" });
+      }
+      let reqObj = req.body;
+      let reqEmpty = true;
+      for (let key in reqObj) {
+        if (key === "_id") continue;
+        if (reqObj[key] !== "") {
+          reqEmpty = false;
+          break;
+        }
+      }
+      if (reqEmpty === true) {
+        return res.status(202).json({ error: "no update field(s) sent" });
+      }
+
       const issueID = req.body._id;
-      const currentProject = await Project.findOne(
-        { project_name: project },
-        { issues: { $elemMatch: { _id: issueID } } }
-      );
-      console.log(currentProject.issues[0]);
-      const currentIssue = currentProject.issues[0];
+      const currentProject = await Project.findOne({ project_name: project });
+      const currentIssues = currentProject.issues;
+      const currentIssue = currentIssues.filter(
+        (obj) => obj._id.toString() === issueID
+      )[0];
+      if (!currentIssue) {
+        return res
+          .status(202)
+          .json({ error: "could not update", _id: issueID });
+      }
 
       const Doc = await Project.findOneAndUpdate(
         { project_name: project, "issues._id": issueID },
@@ -114,16 +131,24 @@ module.exports = function (app) {
             "issues.$.open": req.body.open || currentIssue.open,
           },
         }
-      ).then(async (data) => {
-        if (data == null) {
-          res.json({ error: "Issue not found" });
-        } else {
-          res.json({
-            result: "updated successfully",
-            _id: data.issues[0]._id,
-          });
-        }
-      });
+      )
+        .then(async (data) => {
+          if (data == null) {
+            return res
+              .status(202)
+              .json({ error: "could not update", _id: issueID });
+          } else {
+            return res.status(200).json({
+              result: "updated successfully",
+              _id: data.issues[0]._id,
+            });
+          }
+        })
+        .catch((err) => {
+          return res
+            .status(202)
+            .json({ error: "could not update", _id: issueID });
+        });
     })
 
     .delete(function (req, res) {
