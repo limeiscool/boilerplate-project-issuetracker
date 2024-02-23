@@ -45,15 +45,15 @@ module.exports = function (app) {
 
     .post(async (req, res) => {
       let reqObj = req.body;
-      let reqEmpty = true;
-      for (let key in reqObj) {
-        if (key === "assigned_to" || key === "status_text") continue;
-        if (reqObj[key] !== "") {
-          reqEmpty = false;
+      const checkKeys = ["issue_title", "issue_text", "created_by"];
+      let reqEmpty = false;
+      for (let each of checkKeys) {
+        if (reqObj[each] === "" || !reqObj[each]) {
+          reqEmpty = true;
           break;
         }
       }
-      if (reqEmpty) {
+      if (reqEmpty === true) {
         return res.status(202).json({ error: "required field(s) missing" });
       }
       let project = req.params.project;
