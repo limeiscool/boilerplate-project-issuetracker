@@ -6,7 +6,7 @@ const connection = mongoose.connect(process.env.MONGO_URI);
 
 module.exports = function (app) {
   const dateAutoGen = () => {
-    return new Date().toISOString();
+    return new Date();
   };
   const filterIssues = (issues, query) => {
     const newIssues = issues.filter((obj) => {
