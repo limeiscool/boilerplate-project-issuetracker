@@ -151,7 +151,37 @@ module.exports = function (app) {
         });
     })
 
-    .delete(function (req, res) {
+    .delete(async (req, res) => {
       let project = req.params.project;
+      if (req.body._id === "" || !req.body._id) {
+        return res.status(202).json({ error: "missing _id" });
+      }
+      const issueID = req.body._id;
+      const currentProject = await Project.findOne({ project_name: project });
+      const currentIssues = currentProject.issues;
+      const currentIssue = currentIssues.filter(
+        (obj) => obj._id.toString() === issueID
+      )[0];
+      if (!currentIssue) {
+        return res
+          .status(202)
+          .json({ error: "could not delete", _id: issueID });
+      }
+
+      const Doc = Project.findOneAndUpdate(
+        { project_name: project },
+        { $pull: { issues: { _id: req.body._id } } }
+      ).then(async (data) => {
+        if (data == null) {
+          return res
+            .status(202)
+            .json({ error: "could not delete", _id: issueID });
+        } else {
+          return res.status(200).json({
+            result: "deleted successfully",
+            _id: data.issues[0]._id,
+          });
+        }
+      });
     });
 };

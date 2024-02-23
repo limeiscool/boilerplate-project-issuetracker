@@ -174,4 +174,45 @@ suite("Functional Tests", () => {
         });
     });
   });
+  suite("DELETE /api/issues/:project/:issue_id", () => {
+    test("Delete an issue", (done) => {
+      chai
+        .request(server)
+        .delete("/api/issues/test")
+        .send({
+          _id: ID,
+        })
+        .end((err, res) => {
+          assert.equal(res.status, 200);
+          assert.equal(res.body.result, "deleted successfully");
+          done();
+        });
+    });
+    test("Delete an issue with an invalid _id", (done) => {
+      const invalidID = "123456789012345678901234";
+      chai
+        .request(server)
+        .delete("/api/issues/test")
+        .send({
+          _id: invalidID,
+        })
+        .end((err, res) => {
+          assert.equal(res.status, 202);
+          assert.equal(res.body._id, invalidID);
+          assert.equal(res.body.error, "could not delete");
+          done();
+        });
+    });
+    test("Delete an issue with no _id", (done) => {
+      chai
+        .request(server)
+        .delete("/api/issues/test")
+        .send({})
+        .end((err, res) => {
+          assert.equal(res.status, 202);
+          assert.equal(res.body.error, "missing _id");
+          done();
+        });
+    });
+  });
 });
