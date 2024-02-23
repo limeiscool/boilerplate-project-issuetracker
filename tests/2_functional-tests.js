@@ -63,7 +63,7 @@ suite("Functional Tests", () => {
           created_by: "Test User",
         })
         .end((err, res) => {
-          assert.equal(res.status, 400);
+          assert.equal(res.status, 202);
           assert.equal(res.body.error, "required field(s) missing");
           done();
         });

@@ -44,12 +44,17 @@ module.exports = function (app) {
     })
 
     .post(async (req, res) => {
-      if (
-        !req.body.issue_title ||
-        !req.body.issue_text ||
-        !req.body.created_by
-      ) {
-        return res.status(400).json({ error: "required field(s) missing" });
+      let reqObj = req.body;
+      let reqEmpty = true;
+      for (let key in reqObj) {
+        if (key === "assigned_to" || key === "status_text") continue;
+        if (reqObj[key] !== "") {
+          reqEmpty = false;
+          break;
+        }
+      }
+      if (reqEmpty) {
+        return res.status(202).json({ error: "required field(s) missing" });
       }
       let project = req.params.project;
       let issue = {
@@ -139,7 +144,7 @@ module.exports = function (app) {
               .json({ error: "could not update", _id: issueID });
           } else {
             return res.status(200).json({
-              result: "updated successfully",
+              result: "successfully updated",
               _id: data.issues[0]._id,
             });
           }
