@@ -184,7 +184,7 @@ suite("Functional Tests", () => {
         })
         .end((err, res) => {
           assert.equal(res.status, 200);
-          assert.equal(res.body.result, "deleted successfully");
+          assert.equal(res.body.result, "successfully deleted");
           done();
         });
     });

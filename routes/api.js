@@ -103,7 +103,9 @@ module.exports = function (app) {
         }
       }
       if (reqEmpty === true) {
-        return res.status(202).json({ error: "no update field(s) sent" });
+        return res
+          .status(202)
+          .json({ error: "no update field(s) sent", _id: req.body._id });
       }
 
       const issueID = req.body._id;
@@ -145,7 +147,7 @@ module.exports = function (app) {
           } else {
             return res.status(200).json({
               result: "successfully updated",
-              _id: data.issues[0]._id,
+              _id: issueID,
             });
           }
         })
@@ -183,8 +185,8 @@ module.exports = function (app) {
             .json({ error: "could not delete", _id: issueID });
         } else {
           return res.status(200).json({
-            result: "deleted successfully",
-            _id: data.issues[0]._id,
+            result: "successfully deleted",
+            _id: issueID,
           });
         }
       });
