@@ -12,7 +12,11 @@ module.exports = function (app) {
     const newIssues = issues.filter((obj) => {
       let result;
       for (let key in query) {
-        if (obj[key] === query[key]) {
+        if (key === "_id") {
+          if (obj[key].toString() === query[key]) {
+            result = true;
+          }
+        } else if (obj[key] === query[key]) {
           result = true;
         } else {
           result = false;
@@ -22,6 +26,17 @@ module.exports = function (app) {
       return result;
     });
     return newIssues;
+  };
+  const findIssue = async (project, id) => {
+    const query = Project.where({ project_name: project });
+    const projectObj = await query.findOne();
+    const issues = projectObj.issues;
+    const currentIssue = issues.filter((obj) => obj._id.toString() === id)[0];
+    if (!currentIssue) {
+      return null;
+    } else {
+      return currentIssue;
+    }
   };
 
   app
@@ -93,69 +108,47 @@ module.exports = function (app) {
       if (req.body._id === "" || !req.body._id) {
         return res.status(202).json({ error: "missing _id" });
       }
-      let reqObj = req.body;
-      let reqEmpty = true;
-      for (let key in reqObj) {
-        if (key === "_id") continue;
-        if (reqObj[key] !== "") {
-          reqEmpty = false;
-          break;
-        }
-      }
-      if (reqEmpty === true) {
+      let updateFeilds =
+        req.body.issue_title ||
+        req.body.issue_text ||
+        req.body.created_by ||
+        req.body.assigned_to ||
+        req.body.status_text ||
+        req.body.open;
+      if (updateFeilds === "" || !updateFeilds) {
         return res
           .status(202)
           .json({ error: "no update field(s) sent", _id: req.body._id });
       }
-
-      const issueID = req.body._id;
-      const currentProject = await Project.findOne({ project_name: project });
-      const currentIssues = currentProject.issues;
-      const currentIssue = currentIssues.filter(
-        (obj) => obj._id.toString() === issueID
-      )[0];
-      if (!currentIssue) {
+      let foundIssue = await findIssue(project, req.body._id);
+      if (!foundIssue) {
         return res
           .status(202)
-          .json({ error: "could not update", _id: issueID });
+          .json({ error: "could not update", _id: req.body._id });
       }
-
-      const Doc = await Project.findOneAndUpdate(
-        { project_name: project, "issues._id": issueID },
-        {
-          $set: {
-            "issues.$.issue_title":
-              req.body.issue_title || currentIssue.issue_title,
-            "issues.$.issue_text":
-              req.body.issue_text || currentIssue.issue_text,
-            "issues.$.created_by":
-              req.body.created_by || currentIssue.created_by,
-            "issues.$.updated_on": dateAutoGen(),
-            "issues.$.assigned_to":
-              req.body.assigned_to || currentIssue.assigned_to,
-            "issues.$.status_text":
-              req.body.status_text || currentIssue.status_text,
-            "issues.$.open": req.body.open || currentIssue.open,
-          },
-        }
-      )
-        .then(async (data) => {
-          if (data == null) {
-            return res
-              .status(202)
-              .json({ error: "could not update", _id: issueID });
-          } else {
-            return res.status(200).json({
-              result: "successfully updated",
-              _id: issueID,
-            });
-          }
-        })
-        .catch((err) => {
-          return res
-            .status(202)
-            .json({ error: "could not update", _id: issueID });
-        });
+      const filter = { "issues._id": req.body._id };
+      const update = {
+        $set: {
+          "issues.$.issue_title":
+            req.body.issue_title || foundIssue.issue_title,
+          "issues.$.issue_text": req.body.issue_text || foundIssue.issue_text,
+          "issues.$.created_by": req.body.created_by || foundIssue.created_by,
+          "issues.$.assigned_to":
+            req.body.assigned_to || foundIssue.assigned_to,
+          "issues.$.status_text":
+            req.body.status_text || foundIssue.status_text,
+          "issues.$.open": req.body.open || foundIssue.open,
+          "issues.$.updated_on": dateAutoGen(),
+        },
+      };
+      const doc = await Project.findOneAndUpdate(filter, update, {
+        new: true,
+      });
+      const updatedIssue = doc.issues.filter((obj) => {
+        return obj._id.toString() === req.body._id;
+      })[0];
+      var _id = new mongoose.Types.ObjectId(updatedIssue._id);
+      return res.status(200).json({ result: "successfully updated", _id: _id });
     })
 
     .delete(async (req, res) => {
